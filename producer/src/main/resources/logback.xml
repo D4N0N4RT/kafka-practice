@@ -1,0 +1,65 @@
+<configuration>
+
+    <!-- PROPERTIES -->
+    <property name="LOG_HOME" value="./producer_logs/" />
+    <property name="DEFAULT_PATTERN" value="%d{dd.MM.yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%ex" />
+
+    <!-- APPENDER -->
+    <appender name="TIME_BASED_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/producer.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/archive/producer.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <http>
+            <url>http://localhost:3100/loki/api/v1/push</url>
+        </http>
+        <format>
+            <label>
+                <pattern>host=${HOSTNAME},traceID=%X{traceId:-NONE},level=%level,spanId=%X{spanId:-NONE}</pattern>
+                <readMarkers>true</readMarkers>
+            </label>
+            <message>
+                <!--<pattern>${DEFAULT_PATTERN}</pattern>-->
+                <pattern>
+                    {
+                    "datetime": "%d{dd.MM.yyyy HH:mm:ss.SSS}"
+                    "level": "%level",
+                    "thread": "[%thread]"
+                    "class": "%logger{36}",
+                    "message": "%message",
+                    "requestId": "%X{X-Request-ID}",
+                    "traceId": "%X{traceId}",
+                    "spanId": "%X{spanId}"
+                    }
+                </pattern>
+            </message>
+            <sortByTime>true</sortByTime>
+        </format>
+    </appender>
+
+    <!-- LOGGERS -->
+    <logger name="debuggers" level="trace" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="TIME_BASED_FILE"/>
+    </logger>
+
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="TIME_BASED_FILE"/>
+        <appender-ref ref="LOKI"/>
+    </root>
+</configuration>

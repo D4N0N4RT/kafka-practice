@@ -1,0 +1,42 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/kafkaDB
+    username: db_user
+    password: db_pass
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: "transfer-group"
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      isolation-level: read_committed
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+    enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    enabled-by-default: true
+  metrics:
+    tags:
+      application: producer
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+  prometheus:
+    metrics:
+      export:
+        enabled: true

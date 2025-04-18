@@ -1,0 +1,44 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: producer
+  datasource:
+    url: jdbc:postgresql://localhost:5432/kafkaDB
+    username: db_user
+    password: db_pass
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      properties:
+        enable.idempotence: true
+        acks: all
+        retries: 3
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+    enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    enabled-by-default: true
+  metrics:
+    tags:
+      application: producer
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
