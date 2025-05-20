@@ -17,21 +17,9 @@ public class TransfersService {
 
     private final TransfersDAO transfersDAO;
 
-    public Transfer createTransfer(Transfer transfer) {
-        log.info("createTransfer(): transfer with id {} is PROCESSING", transfer.getId());
-        transfer.setStatus(TransferStatus.PROCESSING);
-        return transfersDAO.save(transfer);
-    }
-
-    public Transfer completeTransfer(Transfer transfer) {
-        log.info("completeTransfer(): transfer with id {} is COMPLETED", transfer.getId());
-        transfer.setStatus(TransferStatus.COMPLETED);
-        return transfersDAO.save(transfer);
-    }
-
-    public Transfer rejectTransfer(Transfer transfer) {
-        log.info("rejectTransfer(): transfer with id {} is REJECTED", transfer.getId());
-        transfer.setStatus(TransferStatus.REJECTED);
+    public Transfer changeTransferStatus(Transfer transfer, TransferStatus status) {
+        log.info("createTransfer(): transfer with id {} is {}", transfer.getId(), status);
+        transfer.setStatus(status);
         return transfersDAO.save(transfer);
     }
 

@@ -1,8 +1,6 @@
 package com.example.office.service;
 
 import com.example.office.model.Transfer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.annotation.Observed;
@@ -19,12 +17,11 @@ import java.util.List;
 @Service
 public class KafkaProducerService {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final KafkaTemplate<String, Transfer> kafkaTemplate;
     private final Counter sentCounter;
 
     @Autowired
-    public KafkaProducerService(MeterRegistry registry, KafkaTemplate<String, String> template) {
+    public KafkaProducerService(MeterRegistry registry, KafkaTemplate<String, Transfer> template) {
 
         sentCounter = Counter.builder("transactions_sent_total").
             tag("version", "v1").
@@ -40,8 +37,8 @@ public class KafkaProducerService {
         for (Transfer item : events) {
             try {
                 log.info("Sent transfer with id = {}", item.getId());
-                kafkaTemplate.send("account-transfers", objectMapper.writeValueAsString(item));
-            } catch (JsonProcessingException e) {
+                kafkaTemplate.send("account-transfers", item);
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }

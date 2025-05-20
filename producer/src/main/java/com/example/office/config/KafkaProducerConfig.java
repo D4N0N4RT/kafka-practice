@@ -1,12 +1,11 @@
 package com.example.office.config;
 
 
-import io.micrometer.core.instrument.MeterRegistry;
+import com.example.office.model.Transfer;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,16 +26,10 @@ public class KafkaProducerConfig {
 
     @Value(value = "${spring.kafka.producer.bootstrap-servers}")
     private String bootstrapAddress;
-    private final MeterRegistry meterRegistry;
-
-    @Autowired
-    public KafkaProducerConfig(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
 
 
     @Bean
-    public ProducerFactory<String,String> producerFactory() {
+    public ProducerFactory<String, Transfer> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
@@ -54,22 +47,18 @@ public class KafkaProducerConfig {
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
             JsonSerializer.class);
         configProps.put(
-            ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,
-            true);
-        configProps.put(
             ProducerConfig.TRANSACTIONAL_ID_CONFIG,
             "my-transactional-id");
-        DefaultKafkaProducerFactory<String, String> factory = new DefaultKafkaProducerFactory<>(configProps);
+        DefaultKafkaProducerFactory<String, Transfer> factory = new DefaultKafkaProducerFactory<>(configProps,
+            new StringSerializer(), new JsonSerializer<>());
         factory.setTransactionIdPrefix("tx-");
-        //factory.addListener(new MicrometerProducerListener<>(meterRegistry));
         return factory;
     }
 
     @Bean
-    public KafkaTemplate<String, String> kafkaTemplate() {
-        KafkaTemplate<String, String> template = new KafkaTemplate<>(producerFactory());
+    public KafkaTemplate<String, Transfer> kafkaTemplate() {
+        KafkaTemplate<String, Transfer> template = new KafkaTemplate<>(producerFactory());
         template.setObservationEnabled(true);
-        //template.setObservationConvention(KafkaListenerObservation.DefaultKafkaListenerObservationConvention);
         return template;
     }
 
@@ -83,7 +72,7 @@ public class KafkaProducerConfig {
     }
 
     @Bean
-    public KafkaTransactionManager<String, String> transactionManager() {
+    public KafkaTransactionManager<String, Transfer> transactionManager() {
         return new KafkaTransactionManager<>(producerFactory());
     }
 }

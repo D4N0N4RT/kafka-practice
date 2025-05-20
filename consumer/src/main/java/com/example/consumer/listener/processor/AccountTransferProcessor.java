@@ -2,10 +2,10 @@ package com.example.consumer.listener.processor;
 
 import com.example.consumer.model.Account;
 import com.example.consumer.model.Transfer;
+import com.example.consumer.model.TransferStatus;
 import com.example.consumer.service.AccountsService;
 import com.example.consumer.service.TransfersService;
 import io.micrometer.observation.annotation.Observed;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,12 +21,6 @@ public class AccountTransferProcessor {
 
     private final AccountsService accountsService;
     private final TransfersService transfersService;
-    private Map<UUID, Account> accounts;
-
-    @PostConstruct
-    void initAccounts() {
-        accounts = accountsService.initAccounts();
-    }
 
 
     @Observed
@@ -36,22 +30,13 @@ public class AccountTransferProcessor {
             log.error("processTransfer() ERROR: transfer already exists");
             return;
         }
-        Account sender = accounts.get(transfer.getSenderId());
-        Account receiver = accounts.get(transfer.getReceiverId());
-        if (Objects.isNull(sender) || Objects.isNull(receiver)) {
-            log.error("processTransfer() ERROR: one of the accounts included in transfer doesn't exist. Aborting transfer");
-            return;
-        } else if (sender.getBalance() < transfer.getAmount()) {
-            log.error("processTransfer() ERROR: sender doesn't have enough money to complete transfer");
-            return;
-        }
-        Transfer createdTransfer = transfersService.createTransfer(transfer);
-        Map<UUID, Account> accountMap = accountsService.transferMoney(sender, receiver, createdTransfer);
+        accountsService.accountsCheck(transfer);
+        Transfer createdTransfer = transfersService.changeTransferStatus(transfer, TransferStatus.PROCESSING);
+        Map<UUID, Account> accountMap = accountsService.transferMoney(createdTransfer);
         if (Objects.nonNull(accountMap)) {
-            transfersService.completeTransfer(createdTransfer);
-            accounts = accountMap;
+            transfersService.changeTransferStatus(createdTransfer, TransferStatus.COMPLETED);
         } else {
-            transfersService.rejectTransfer(createdTransfer);
+            transfersService.changeTransferStatus(createdTransfer, TransferStatus.REJECTED);
         }
     }
 }

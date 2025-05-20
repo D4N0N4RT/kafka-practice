@@ -1,5 +1,7 @@
 package com.example.consumer.config;
 
+import com.example.consumer.listener.KafkaErrorHandler;
+import com.example.consumer.model.Transfer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +12,8 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.CommonErrorHandler;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,46 +25,54 @@ public class ConsumerConfiguration {
 
     @Value(value = "${spring.kafka.bootstrap-servers}")
     private String bootstrapAddress;
-    @Value(value = "${spring.kafka.consumer.group-id}")
-    private String groupId;
 
     @Bean
-    public ConsumerFactory<String, String> consumerFactory() {
+    public ConsumerFactory<String, Transfer> consumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
             bootstrapAddress);
         configProps.put(
-            ConsumerConfig.GROUP_ID_CONFIG,
-            groupId);
-        configProps.put(
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-            "earliest");
+            ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
+            "5");
         configProps.put(
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
             StringDeserializer.class);
         configProps.put(
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-            StringDeserializer.class);
-        configProps.put(
-            ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
-            "5");
-        configProps.put(
+            JsonDeserializer.class);
+        /*configProps.put(
             ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
             "false");
         configProps.put(
             ConsumerConfig.ISOLATION_LEVEL_CONFIG,
-            "read_committed");
-        //factory.addListener(new MicrometerConsumerListener<>(meterRegistry));
-        return new DefaultKafkaConsumerFactory<>(configProps);
+            "read_committed");*/
+        JsonDeserializer<Transfer> payloadJsonDeserializer = new JsonDeserializer<>();
+        Map<String, Object> deserProps = new HashMap<>();
+        deserProps.put(
+            JsonDeserializer.VALUE_DEFAULT_TYPE, "com.example.consumer.model.Transfer"
+        );
+        deserProps.put(
+            JsonDeserializer.TRUSTED_PACKAGES,
+            "*"
+        );
+        payloadJsonDeserializer.configure(deserProps, false);
+        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(),
+            payloadJsonDeserializer.ignoreTypeHeaders());
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+    CommonErrorHandler commonErrorHandler() {
+        return new KafkaErrorHandler();
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Transfer> kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Transfer> factory =
             new ConcurrentKafkaListenerContainerFactory<>();
         factory.getContainerProperties().setObservationEnabled(true);
         factory.setConsumerFactory(consumerFactory());
+        factory.setCommonErrorHandler(commonErrorHandler());
         //factory.setBatchListener(true);
         return factory;
     }
