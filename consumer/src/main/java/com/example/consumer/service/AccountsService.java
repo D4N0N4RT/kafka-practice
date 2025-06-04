@@ -44,7 +44,7 @@ public class AccountsService {
     }
 
     @Transactional
-    public Map<UUID, Account> transferMoney(Transfer transfer) {
+    public boolean transferMoney(Transfer transfer) {
         Account sender = accounts.get(transfer.getSenderId());
         Account receiver = accounts.get(transfer.getReceiverId());
         sender.setBalance(sender.getBalance() - transfer.getAmount());
@@ -53,6 +53,6 @@ public class AccountsService {
         accountsDAO.save(receiver);
         accounts.put(sender.getId(), sender);
         accounts.put(receiver.getId(), receiver);
-        return accounts;
+        return true;
     }
 }

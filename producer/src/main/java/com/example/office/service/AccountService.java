@@ -25,7 +25,6 @@ public class AccountService {
         return accounts;
     }
 
-    //@Transactional
     void initAccounts() {
         log.info("initAccounts():");
         List<Account> accountList = accountsDAO.findAll();

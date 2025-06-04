@@ -73,7 +73,6 @@ public class ConsumerConfiguration {
         factory.getContainerProperties().setObservationEnabled(true);
         factory.setConsumerFactory(consumerFactory());
         factory.setCommonErrorHandler(commonErrorHandler());
-        //factory.setBatchListener(true);
         return factory;
     }
 }

@@ -10,10 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -32,8 +28,7 @@ public class AccountTransferProcessor {
         }
         accountsService.accountsCheck(transfer);
         Transfer createdTransfer = transfersService.changeTransferStatus(transfer, TransferStatus.PROCESSING);
-        Map<UUID, Account> accountMap = accountsService.transferMoney(createdTransfer);
-        if (Objects.nonNull(accountMap)) {
+        if (accountsService.transferMoney(createdTransfer)) {
             transfersService.changeTransferStatus(createdTransfer, TransferStatus.COMPLETED);
         } else {
             transfersService.changeTransferStatus(createdTransfer, TransferStatus.REJECTED);
